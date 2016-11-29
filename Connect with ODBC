@@ -1,0 +1,36 @@
+/* PROC SQL: Connect with other Databases */
+
+/* Connect SAS with Oracle */
+
+Options linesize=120 pagesize=60 nodate;
+
+libname mydblib oracle user=huang596 password=abcd0101 path='ora8_server' schema=department;
+
+PROC SQL dquote = ANSI;
+  CREATE TABLE mydblib.pay1 
+  AS
+  SELECT idnum AS "ID #",gender, jobcode, salary,birth as BirthDate,hired as HireDate
+  FROM mydblib.payroll
+  ORDER BY BirthDate;
+  
+  Title "Payroll Table with Revised Column Names";
+  SELECT * FROM mydblib.pay1;
+QUIT;
+
+/* From ODBC to visit table in access */
+PROC SQL;
+  connect to ODBC (dsn=testdata);    /* dsn: data source name */
+  SELECT * FROM connection to ODBC
+  (SELECT * FROM Marker);
+QUIT;
+
+/* SET UP LIBRARY */
+LIBNAME SQL ODBC DSN=’sql server’ user=sasjlb pw=pwd;
+
+/* SQL Server Authentication */
+PROC SQL;
+  connect to odbc (dsn=sqlsrv user=user pwd=xxxxx);
+  CREATE TABLE test 
+  AS 
+  SELECT * FROM connection to ODBC(ODBC::SQLTables); 
+QUIT;
