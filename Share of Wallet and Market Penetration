@@ -1,0 +1,58 @@
+/* Collect all unique customer IDs in firm A from account data */
+
+PROC SQL;
+  CREATE TABLE firm_A_customers AS
+  SELECT DISTINCT uid FROM L.trades WHERE OWNER = 'firm_A';
+QUIT;
+
+/* For each unique customer collected above, calculate the credit card balance for each firm for these customers only */
+
+DATA credit_cards;
+SET L.trades;
+IF product='card';
+RUN;
+
+PROC SORT data=firm_A_customers;
+  by uid;
+RUN;
+
+PROC SORT data=credit_cards;
+  by uid;
+RUN;
+
+DATA credit_cards;
+  MERGE credit_cards(IN=a) firm_A_customers(IN=b);  
+  BY UID
+  IF a AND b;
+RUN;
+
+PROC SQL;
+  CREATE TABLE share
+  AS
+  SELECT uid,owner,sum(balance) as balance
+  FROM credit_cards  
+  WHERE product='card' and balance > 0
+  GROUP BY uid,owner
+  ORDER BY uid;
+QUIT;
+
+PROC TRANSPOSE DATA=share OUT=share_tr;
+  by uid;
+  id owner;
+QUIT;
+
+/* Compute the share of wallet, ie. the percentage of balance amount across all firms */
+DATA share_tr;
+  SET share_tr;
+  array a[5] firm_A firm_B firm_C firm_D firm_E;
+  DO j=1 to 5;
+    IF a[j] = . THEN a[j] = 0;
+  END;
+  total = firm_A + firm_B + firm_C + firm_D + firm_E
+  DO j=1 to 5;
+    a[j] = round(100*a[j]/total,0.1);
+  END;
+  format total dollar7.2;
+  drop j _NAME_;
+RUN;
+  
